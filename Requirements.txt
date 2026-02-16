@@ -1,2 +1,0 @@
-pip install streamlit pdfplumber python-docx transformers torch spacy
-python -m spacy download en_core_web_sm
