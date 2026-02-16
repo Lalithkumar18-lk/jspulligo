@@ -1,19 +1,14 @@
 import streamlit as st
 import cv2
 import numpy as np
-from ultralytics import YOLO
-from PIL import Image
 import tempfile
 
 st.set_page_config(page_title="Vegil AI", page_icon="🚨")
 
-st.title("🚨 Vegil AI - Intelligent Surveillance System")
-st.write("Upload a video to detect suspicious activity (Demo Version)")
+st.title("🚨 Vegil AI - Simple Surveillance Demo")
+st.write("Upload a video to detect motion (Demo Version)")
 
-# Load YOLOv8 model
-model = YOLO("yolov8n.pt")
-
-uploaded_file = st.file_uploader("Upload CCTV Video", type=["mp4", "avi"])
+uploaded_file = st.file_uploader("Upload Video", type=["mp4", "avi"])
 
 if uploaded_file:
 
@@ -24,37 +19,38 @@ if uploaded_file:
 
     stframe = st.empty()
 
-    threat_detected = False
+    ret, frame1 = cap.read()
+    ret, frame2 = cap.read()
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    motion_detected = False
 
-        results = model(frame)
+    while ret:
+        diff = cv2.absdiff(frame1, frame2)
+        gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresh = cv2.threshold(blur, 20, 255, cv2.THRESH_BINARY)
 
-        for r in results:
-            boxes = r.boxes
-            for box in boxes:
-                cls = int(box.cls[0])
-                label = model.names[cls]
+        contours, _ = cv2.findContours(
+            thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+        )
 
-                # If person detected
-                if label == "person":
-                    threat_detected = True
+        for contour in contours:
+            if cv2.contourArea(contour) > 2000:
+                motion_detected = True
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame1, (x, y),
+                              (x + w, y + h),
+                              (0, 0, 255), 2)
 
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0,255,0), 2)
-                cv2.putText(frame, label, (x1, y1-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                            (0,255,0), 2)
+        frame_rgb = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+        stframe.image(frame_rgb)
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        stframe.image(frame, channels="RGB")
+        frame1 = frame2
+        ret, frame2 = cap.read()
 
     cap.release()
 
-    if threat_detected:
-        st.error("🚨 ALERT: Suspicious Activity Detected!")
+    if motion_detected:
+        st.error("🚨 ALERT: Motion Detected!")
     else:
-        st.success("✅ No Threat Detected")
+        st.success("✅ No Motion Detected")
