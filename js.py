@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="JSPulligo - Job Skill Recommender", page_icon="💼")
 
 st.title("💼 JSPulligo - Job Skill Recommendation System")
-st.write("Enter your skills and get job recommendations!")
+st.write("Enter your js skills and get js job recommendations!")
 
 # Predefined Job Roles and Skills
 job_database = {
