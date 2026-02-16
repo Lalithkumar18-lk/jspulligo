@@ -38,4 +38,4 @@ if st.button("Find Matching Job"):
         else:
             st.warning("No matching job found. Try adding more skills.")
     else:
-        st.error("Please enter your skills!")
+        st.error("Please enter your js skills!")
